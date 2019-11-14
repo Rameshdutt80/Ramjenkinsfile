@@ -1,0 +1,30 @@
+version: "3"
+
+services:
+  sonarqube:
+    image: sonarqube:6.7.5
+    environment:
+      - SONARQUBE_JDBC_USERNAME=sonar
+      - SONARQUBE_JDBC_PASSWORD=v07IGCFCF83Z95NX
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://db:5432/sonarqube
+    ports:
+      - "9000:9000"
+      - "9092:9092"
+    volumes:
+      #- ./docker/sonarqube:/opt/sonarqube
+      #- ./docker/sonarqube/temp:/opt/sonarqube/temp
+      - ./docker/sonarqube/conf:/opt/sonarqube/conf
+      - ./docker/sonarqube/data:/opt/sonarqube/data
+      - ./docker/sonarqube/extensions:/opt/sonarqube/extensions
+      - ./docker/sonarqube/lib/bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+
+  db:
+    image: postgres:10.1
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=v07IGCFCF83Z95NX
+      - POSTGRES_DB=sonarqube
+    volumes:
+      - ./docker/sonarqube_db:/var/lib/postgresql
+      # This needs explicit mapping due to https://github.com/docker-library/postgres/blob/4e48e3228a30763913ece952c611e5e9b95c8759/Dockerfile.template#L52
+      - ./docker/sonarqube_db/data:/var/lib/postgresql/data

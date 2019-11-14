@@ -1,0 +1,90 @@
+stage('initialize') {
+    node('tecops/jenkins-slave:j8a2' && 'csa') {
+        currentBuild.displayName = currentBuild.number + "-${env.ENV}-${env.VERSION}"
+        def tags = [], finalResult = 'SUCCESS', rootDir
+        try {
+            rootDir = pwd()
+            wrap([$class: 'MaskPasswordsBuildWrapper']) {
+                wrap([$class: 'AnsiColorBuildWrapper']) {
+                    stage('Checkout data-ingestion') {
+                        dir('data-ingestion') {
+                            checkout scm
+                        }
+                    }
+
+                    stage('Checkout inventories') {
+                        dir('inventories') {
+                            checkout scm: [$class: 'GitSCM',
+                                userRemoteConfigs: [
+                                    [url: 'https://github.com/sa20-inventories']
+                                ],
+                                branches: [
+                                    [name: "${env.INVENTORY_VERSION}"]
+                                ]
+                            ], changelog: false, poll: false
+                        }
+                    }
+
+                    stage('Pull down ansible common & find tags') {
+                        sh "${rootDir}/data-ingestion/deploy/jenkins-scripts/pipeline/deployNotifications.sh"
+                        sh "pip install --user setuptools==20.3.1"
+                        sh "pip install --upgrade pip"
+                        sh "pip install ansible --upgrade"
+                        sh "cp data-ingestion/deploy/jenkins-scripts/*.sh ."
+                        sh "./find-tags.sh"
+                    }
+
+                    stage('Pre Deploy') {
+                        def preTags = sh(returnStdout: true, script: "cat 'tags.txt' | grep data-ingestion-pre-deploy").trim().tokenize('\n')
+                        echo "${preTags}"
+                        def preBranches = [: ]
+                        for (i = 0; i < preTags.size(); i++) {
+                            def index = i
+                            preBranches["${i}-${preTags.get(index)}"] = {
+                                sh "export INSTALL_COMMON_DURING_DEPLOY=false;export TAG=${preTags.get(index)};./data-ingestion-deploy-generic.sh;"
+                            }
+                        }
+                        parallel preBranches
+                    }
+
+                    stage('Component Deploy') {
+                        def componentTags = sh(returnStdout: true, script: "cat 'tags.txt' | grep data-ingestion-deploy").trim().tokenize('\n')
+                        echo "${componentTags}"
+                        def componentBranches = [: ]
+                        for (i = 0; i < componentTags.size(); i++) {
+                            def index = i
+                            componentBranches["${i}-${componentTags.get(index)}"] = {
+                                sh "export INSTALL_COMMON_DURING_DEPLOY=false;export TAG=${componentTags.get(index)};./data-ingestion-deploy-generic.sh"
+                            }
+                        }
+                        parallel componentBranches
+                    }
+                    stage('Post Deploy') {
+                        def postTags = sh(returnStdout: true, script: "cat 'tags.txt' | grep data-ingestion-post-deploy").trim().tokenize('\n')
+                        echo "${postTags}"
+                        def postBranches = [: ]
+                        for (i = 0; i < postTags.size(); i++) {
+                            def index = i
+                            postBranches["${i}-${postTags.get(index)}"] = {
+                                sh "export INSTALL_COMMON_DURING_DEPLOY=false;export TAG=${postTags.get(index)};./data-ingestion-deploy-generic.sh"
+                            }
+                        }
+                        parallel postBranches
+                    }
+
+                }
+            }
+        } catch (e) {
+            finalResult = "FAILURE"
+            throw e
+        } finally {
+            currentBuild.result = "${finalResult}"
+            sh "export DEPLOYMENT_STATUS=${finalResult};'${rootDir}/data-ingestion/deploy/jenkins-scripts/pipeline/deployNotifications.sh'"
+           // logstashSend failBuild: false, maxLines: 10
+        }
+    }
+}
+
+https://dzone.com/articles/sonarqube-scanning-in-15-minutes-2
+docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 sonarqube
+https://funnelgarden.com/sonarqube-jenkins-docker/

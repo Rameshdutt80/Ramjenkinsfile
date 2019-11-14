@@ -1,0 +1,401 @@
+// error on catch
+
+node{
+
+ 
+
+    try{
+
+ 
+
+        stage('git clone') {
+
+ 
+
+            git 'https://github.com/Rameshdutt80/github-maven-example.git'
+
+       
+
+                }
+
+ 
+
+        dir('example') {
+
+ 
+
+            stage('maven compile') {
+
+ 
+
+                  sh label: '', script: 'mvn clean package'
+
+ 
+
+            }
+
+        stage('archive artifacts') {
+
+            archive 'target/*.jar'
+
+ 
+
+        }
+
+        //   mail bcc: '', body: 'Hi ramesh you have a mail on the jenkins build success', cc: '', from: '', replyTo: '', subject: 'Jenkins Job ', to: 'ramesh.dutt80@gmail.com'
+
+ 
+
+    } catch (err) {
+
+ 
+
+            mail bcc: '', body: 'Hi ramesh you have a mail on the jenkins build failure', cc: '', from: '', replyTo: '', subject: 'Jenkins Job ', to: 'ramesh.dutt80@gmail.com'
+
+   
+
+                }
+
+ 
+
+}
+
+ 
+
+pipeline{
+
+ 
+
+    try{
+
+ 
+
+        mail bcc: '', body: 'Hi ramesh you have a mail on the jenkins build success', cc: '', from: '', replyTo: '', subject: 'Jenkins Job ', to: 'ramesh.dutt80@gmail.com'
+
+       
+
+stage('git clone') {
+
+ 
+
+            git 'https://github.com/Rameshdutt80/github-maven-example.git'
+
+ 
+
+        }
+
+ 
+
+        dir('example') {
+
+ 
+
+            stage('maven compile') {
+
+ 
+
+                  sh label: '', script: 'mvn clean package'
+
+ 
+
+            }
+
+ 
+
+            stage('archive artifacts') {
+
+ 
+
+                  archive 'target/*.jar'
+
+ 
+
+            }
+
+ 
+
+        }
+
+ 
+
+    } catch(err){
+
+ 
+
+            mail bcc: '', body: 'Hi ramesh you have a mail on the jenkins build failure', cc: '', from: '', replyTo: '', subject: 'Jenkins Job ', to: 'ramesh.dutt80@gmail.com'
+
+ 
+
+    }
+
+ 
+
+}
+
+ 
+
+sonar analysis
+
+ 
+
+node {
+
+ 
+
+    stage('git clone'){
+
+ 
+
+        git 'https://github.com/Rameshdutt80/gameoflife.git'
+
+ 
+
+    }
+
+ 
+
+    stage('maven build'){
+
+ 
+
+        sh label: '', script: 'mvn package'
+
+ 
+
+    }
+
+ 
+
+    stage('Sonarqube scanner') {
+
+ 
+
+        withSonarqubeEnv('sonarQube'){
+
+ 
+
+            sh "${mvnHome}/bin/mvn admin:admin"
+
+ 
+
+        }
+
+ 
+
+    }
+
+ 
+
+}
+
+ 
+
+ 
+
+gradle job
+
+ 
+
+node {
+
+ 
+
+    stage('clone') {
+
+ 
+
+        // git 'https://github.com/playframework/play-java-starter-example.git'
+
+ 
+
+        git 'https://github.com/Rameshdutt80/gradle-simple.git'
+
+ 
+
+    }
+
+ 
+
+    dir('game-of-life') {
+
+ 
+
+        stage('build') {
+
+ 
+
+        // sh label: '', script: 'gradlew.bat -b migration-job/build.gradle build'
+
+ 
+
+            def gradle_Home = tool name: 'gradle5.6', type: 'gradle'
+
+ 
+
+                    def gradleCMD = "${gradle_Home}/bin/gradle"
+
+ 
+
+            sh "${gradleCMD} tasks"
+
+ 
+
+        }
+
+ 
+
+    }
+
+ 
+
+}
+
+ 
+
+Jenkinsfile
+
+pipeline{
+    agent {
+        label 'rhel'
+    }
+    stages{
+        stage('Pull Repo'){
+            steps {
+                git 'https://github.com/asquarezone/spring-petclinic.git'         
+            }
+        }
+        stage('Build'){
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+        stage('Publish'){
+            steps{
+                junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+            }        
+        }
+    }
+    post {
+        success {
+          emailext(
+            subject: "${env.JOB_NAME} [${env.BUILD_NUMBER}] Development Promoted to Master",
+            body: """<p>'${env.JOB_NAME} [${env.BUILD_NUMBER}]' Development Promoted to Master":</p>
+            <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>""",
+            to: "qtdevops@gmail.com"
+          )
+        }
+        failure {
+        emailext(
+            subject: "${env.JOB_NAME} [${env.BUILD_NUMBER}] Failed!",
+            body: """<p>'${env.JOB_NAME} [${env.BUILD_NUMBER}]' Failed!":</p>
+            <p>Check console output at &QUOT;<a href='${env.BUILD_URL}'>${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>&QUOT;</p>""",
+            to: "qtdevops@gmail.com"
+        )
+        }
+  }
+}
+
+ 
+
+pipeline {
+  agent any
+  stages {
+    stage('Stage 1') {
+      steps {
+        script {
+          echo 'Stage 1'
+        }
+      }
+      post {
+        always {
+          script {
+            echo 'stage1.always'
+          }
+        }
+        success {
+          script {
+            echo 'stage1.success'
+          }
+        }
+        changed {
+          script {
+            echo 'stage1.changed'
+          }
+        }
+        aborted {
+          script {
+            echo 'stage1.aborted'
+          }
+        }
+        failure {
+          script {
+            echo 'stage1.failure'
+          }
+        }
+      }
+    }
+  }
+
+ 
+
+  post {
+
+    always {
+
+      script {
+
+        echo 'post.always'
+
+      }
+
+    }
+
+    success {
+
+      script {
+
+        echo 'post.success'
+
+      }
+
+    }
+
+    changed {
+
+      script {
+
+        echo 'post.changed'
+
+      }
+
+    }
+
+    aborted {
+
+      script {
+
+        echo 'post.aborted'
+
+      }
+
+    }
+
+    failure {
+
+      script {
+
+        echo 'post.failure'
+
+      }
+
+    }
+
+  }
+
+ 
+
+}
+
+ 
+
+ 

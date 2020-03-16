@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+    parameters {
+        choice(name: 'CHOICE', choices: ['game-f-life', 'spring-petclinic'], description: 'Pick something')
+    }
+    stages {
+        stage('Example') {
+            steps {
+                script {
+                    echo "Choice: ${params.CHOICE}"
+		            if( params.CHOICE == 'game-of-life' ){
+		                stage ('1'){
+                            echo "mail list master"
+		                        git 'https://github.com/Rameshdutt80/game-of-life.git'
+		                 }
+                 }
+                 if ( params.CHOICE == 'spring-petclinic' ){
+                     stage ('2') {
+                            echo "mail list others"
+		                        git 'https://github.com/Rameshdutt80/spring-petclinic.git'
+                     }
+                  }
+                }
+            }
+        }
+    }
+}

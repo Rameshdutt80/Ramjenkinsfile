@@ -20,3 +20,4 @@ sh ssh ansadmin@ip-172 "ansible-playbook hello.yml"
     }
    
 }
+test
